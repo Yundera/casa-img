@@ -1,5 +1,6 @@
-# CasaIMG Project
+# Yundera CasaIMG 
 
+This Casa OS build is the custom OS Web-UI for Yundera.
 This project aims to deliver CasaOS (https://github.com/IceWhaleTech/CasaOS) as a docker container.
 
 ## Sponsor
