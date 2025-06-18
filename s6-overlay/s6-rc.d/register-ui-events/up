@@ -1,0 +1,4 @@
+#!/command/with-contenv bash
+
+chown -R "$PUID:$PGID" /usr/local/bin/register-ui-events.sh
+exec gosu "$PUID:$PGID" /usr/local/bin/register-ui-events.sh

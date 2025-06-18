@@ -1,0 +1,51 @@
+#!/bin/bash
+
+echo "CasaOS initialization"
+
+# Get UID/GID from environment variables (default to 1000 if not set)
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+
+# Get Docker group ID from the docker socket file
+DOCKER_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo "999")
+ls -al /var/run/docker.sock
+
+# Ensure group with PGID exists
+if ! getent group "$PGID" >/dev/null; then
+  groupadd -g "$PGID" casaos
+fi
+
+# Ensure user with PUID exists
+if ! getent passwd "$PUID" >/dev/null; then
+  useradd -u "$PUID" -g "$PGID" -M -s /sbin/nologin casaos
+fi
+
+# Create necessary directories with proper ownership
+mkdir -p /DATA/AppData/casaos/apps
+mkdir -p /c/DATA/ # For compatibility with windows host
+mkdir -p /var/log/casaos
+mkdir -p /var/run/casaos
+
+# Set ownership of directories that will be used by casaos processes
+chown -R "$PUID:$PGID" /DATA/
+chown -R "$PUID:$PGID" /c/DATA/
+chown -R "$PUID:$PGID" /var/log/casaos
+chown -R "$PUID:$PGID" /var/run/casaos
+chown -R "$PUID:$PGID" /var/lib/casaos
+
+# Create log files with proper ownership
+touch /var/log/casaos-gateway.log
+touch /var/log/casaos-app-management.log
+touch /var/log/casaos-user-service.log
+touch /var/log/casaos-message-bus.log
+touch /var/log/casaos-local-storage.log
+touch /var/log/casaos-main.log
+
+chown "$PUID:$PGID" /var/log/casaos-*.log
+
+# Export environment variables for other services
+echo "$PUID" > /var/run/s6/container_environment/PUID
+echo "$PGID" > /var/run/s6/container_environment/PGID
+echo "$DOCKER_GID" > /var/run/s6/container_environment/DOCKER_GID
+
+echo "CasaOS initialization completed!"
