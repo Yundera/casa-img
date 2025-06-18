@@ -1,4 +1,6 @@
-#!/command/with-contenv bash
+#!/bin/bash
+
+echo "{}" > /var/run/casaos/routes.json
 
 # Define log filter function
 filter_logs() {

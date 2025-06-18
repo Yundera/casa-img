@@ -1,4 +1,18 @@
-#!/command/with-contenv bash
+#!/bin/bash
+
+# Get the message bus URL
+runtime_file="/var/run/casaos/message-bus.url"
+
+while [ ! -f "$runtime_file" ]; do
+    sleep 1
+    echo "Casa Main waiting for message bus URL..."
+done
+
+# Wait for /var/run/casaos/routes.json to be created
+while [ ! -f /var/run/casaos/routes.json ]; do
+    echo "Waiting for /var/run/casaos/routes.json to be created..."
+    sleep 1
+done
 
 # Wait for main service to be ready
 while [ ! -f /var/run/casaos/casaos.url ]; do

@@ -1,4 +1,4 @@
-#!/command/with-contenv bash
+#!/bin/bash
 
 # Define log filter function
 filter_logs() {
@@ -66,3 +66,4 @@ filter_logs() {
 }
 
 exec gosu "$PUID:$PGID" /usr/local/bin/casaos-message-bus 2>&1 | filter_logs
+

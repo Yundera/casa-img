@@ -274,7 +274,7 @@ RUN go build -o casaos-cli .
 FROM ubuntu:24.04
 
 # Install required packages
-RUN apt-get update && apt-get install -y wget gosu curl smartmontools parted ntfs-3g net-tools udevil samba cifs-utils mergerfs unzip openssh-server
+RUN apt-get update && apt-get install -y rclone wget gosu curl smartmontools parted ntfs-3g net-tools udevil samba cifs-utils mergerfs unzip openssh-server
 
 # install docker https://docs.docker.com/engine/install/ubuntu/
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
@@ -288,10 +288,11 @@ RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
     rm /tmp/s6-overlay-*.tar.xz
 
 # Copy s6 service definitions
-COPY ./s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d/
+COPY ./s6-overlay/ /etc/s6-overlay/
 RUN chmod -R 755 /etc/s6-overlay/s6-rc.d
 RUN chmod +x /etc/s6-overlay/s6-rc.d/*/run
 RUN chmod +x /etc/s6-overlay/s6-rc.d/*/up
+RUN chmod +x /etc/s6-overlay/scripts/*
 
 # Set environment variables
 ENV GO_ENV=production
@@ -330,6 +331,8 @@ RUN chmod +x /usr/local/bin/register-ui-events.sh
 EXPOSE 8080
 
 ENV PATH="/command:$PATH"
+
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=60000
 
 # Set s6 as entrypoint
 ENTRYPOINT ["/init"]

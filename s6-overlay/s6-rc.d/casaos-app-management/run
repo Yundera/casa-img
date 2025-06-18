@@ -1,7 +1,16 @@
-#!/command/with-contenv bash
+#!/bin/bash
 
-# Wait for local-storage to be ready (routes.json with local_storage)
+# Get the message bus URL
+runtime_file="/var/run/casaos/message-bus.url"
+
+while [ ! -f "$runtime_file" ]; do
+    sleep 1
+    echo "Casa Main waiting for message bus URL..."
+done
+
+# Wait for /var/run/casaos/routes.json to be created and contains local_storage
 while [ ! -f /var/run/casaos/routes.json ] || ! grep -q "local_storage" /var/run/casaos/routes.json; do
+    echo "Waiting for /var/run/casaos/routes.json to be created and contains local_storage..."
     sleep 1
 done
 
