@@ -326,10 +326,6 @@ COPY --from=builder-casaos-ui /app/build/sysroot/var/lib/casaos/ /var/lib/casaos
 COPY ./CasaOS-UI/register-ui-events.sh /usr/local/bin/register-ui-events.sh
 RUN chmod +x /usr/local/bin/register-ui-events.sh
 
-# Copy entrypoint
-COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
 # Expose port
 EXPOSE 8080
 
