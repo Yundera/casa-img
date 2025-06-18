@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/command/with-contenv bash
 
 # Define log filter function
 filter_logs() {

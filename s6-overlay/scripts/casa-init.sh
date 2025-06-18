@@ -10,11 +10,13 @@ DOCKER_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || echo "999")
 
 # Ensure group with PGID exists
 if ! getent group "$PGID" >/dev/null; then
+  echo "Creating group casaos with GID: $PGID"
   groupadd -g "$PGID" casaos
 fi
 
 # Ensure user with PUID exists
 if ! getent passwd "$PUID" >/dev/null; then
+  echo "Creating user casaos with UID: $PUID and GID: $PGID"
   useradd -u "$PUID" -g "$PGID" -M -s /sbin/nologin casaos
 fi
 
@@ -42,11 +44,14 @@ touch /var/log/casaos-main.log
 chown "$PUID:$PGID" /var/log/casaos-*.log
 
 # Export environment variables for other services
-echo "$PUID" > /var/run/s6/container_environment/PUID
-echo "$PGID" > /var/run/s6/container_environment/PGID
-echo "$DOCKER_GID" > /var/run/s6/container_environment/DOCKER_GID
+echo -n "$PUID" > /var/run/s6/container_environment/PUID
+echo -n "$PGID" > /var/run/s6/container_environment/PGID
+echo -n "$DOCKER_GID" > /var/run/s6/container_environment/DOCKER_GID
 
+mkdir -p /var/run/rclone
 touch /var/run/rclone/rclone.sock
+# Ensure rclone socket has correct permissions
+chown "$PUID:$PGID" /var/run/rclone/rclone.sock
 
 echo "Starting CasaOS services as UID:GID $PUID:$PGID..."
 echo "Docker group ID: $DOCKER_GID"

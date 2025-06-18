@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/command/with-contenv bash
 
 # Get the message bus URL
 runtime_file="/var/run/casaos/message-bus.url"

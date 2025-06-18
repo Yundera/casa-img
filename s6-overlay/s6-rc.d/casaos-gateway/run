@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/command/with-contenv bash
 
 echo "{}" > /var/run/casaos/routes.json
+chown "$PUID:$PGID" /var/run/casaos/routes.json
 
 # Define log filter function
 filter_logs() {
