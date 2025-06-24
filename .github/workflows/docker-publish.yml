@@ -2,7 +2,6 @@
 name: CasaImg Docker Publish
 on:
   push:
-    branches: [ main ]
     tags: [ 'v*' ]  # Trigger on version tags like v1.15, v2.0.1, etc.
   workflow_dispatch:
 env:
