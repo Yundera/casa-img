@@ -1,0 +1,18 @@
+#!/command/with-contenv bash
+
+echo "[CasaOS-Container] Container is shutting down (exit code: $1)"
+
+# If we're shutting down due to an error, log it
+if [ "$1" -ne 0 ]; then
+    echo "[CasaOS-Container] Container exit due to error (code: $1)"
+    echo "[CasaOS-Container] Check service logs for failure details"
+    
+    # Run timeout handler if this appears to be a timeout
+    if [ "$1" -eq 99 ] || [ -f /tmp/service-timeout ]; then
+        /etc/s6-overlay/scripts/timeout-handler.sh
+    fi
+else
+    echo "[CasaOS-Container] Container shutdown requested - cleaning up"
+fi
+
+exit 0

@@ -1,7 +1,11 @@
 #!/command/with-contenv bash
 
+echo "[CasaOS-Gateway] Starting CasaOS Gateway service..."
+echo "[CasaOS-Gateway] Initializing routes configuration..."
 echo "{}" > /var/run/casaos/routes.json
 chown "$PUID:$PGID" /var/run/casaos/routes.json
+echo "[CasaOS-Gateway] Routes configuration initialized at /var/run/casaos/routes.json"
+echo "[CasaOS-Gateway] Starting gateway server as UID:GID $PUID:$PGID..."
 
 # Define log filter function
 filter_logs() {
@@ -56,4 +60,6 @@ filter_logs() {
     done
 }
 
+echo "[CasaOS-Gateway] Gateway service ready - filtering logs for clarity"
+touch /var/run/casaos-status/gateway-started
 exec gosu "$PUID:$PGID" /usr/local/bin/casaos-gateway 2>&1 | filter_logs

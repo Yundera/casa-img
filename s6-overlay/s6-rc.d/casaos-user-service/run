@@ -1,24 +1,33 @@
 #!/command/with-contenv bash
 
+echo "[CasaOS-UserService] Starting CasaOS User Service..."
+echo "[CasaOS-UserService] Waiting for dependencies..."
+
 # Get the message bus URL
 runtime_file="/var/run/casaos/message-bus.url"
 
+echo "[CasaOS-UserService] Waiting for message bus to be ready..."
 while [ ! -f "$runtime_file" ]; do
     sleep 1
-    echo "Casa Main waiting for message bus URL..."
+    echo "[CasaOS-UserService] Still waiting for message bus URL..."
 done
+echo "[CasaOS-UserService] Message bus is ready!"
 
 # Wait for /var/run/casaos/routes.json to be created
+echo "[CasaOS-UserService] Waiting for gateway routes configuration..."
 while [ ! -f /var/run/casaos/routes.json ]; do
-    echo "Waiting for /var/run/casaos/routes.json to be created..."
+    echo "[CasaOS-UserService] Still waiting for gateway routes..."
     sleep 1
 done
+echo "[CasaOS-UserService] Gateway routes found!"
 
 # Wait for /var/run/casaos/routes.json to be created and contains local_storage
+echo "[CasaOS-UserService] Waiting for app management service to be ready..."
 while [ ! -f /var/run/casaos/routes.json ] || ! grep -q "local_storage" /var/run/casaos/routes.json; do
-    echo "Waiting for /var/run/casaos/routes.json to be created and contains local_storage..."
+    echo "[CasaOS-UserService] Still waiting for app management readiness..."
     sleep 1
 done
+echo "[CasaOS-UserService] App management service is ready!"
 
 # Define log filter function
 filter_logs() {
@@ -85,4 +94,7 @@ filter_logs() {
     done
 }
 
-exec gosu "$PUID:$PGID" /usr/local/bin/casaos-user-service 2>&1 | filter_logs
+echo "[CasaOS-UserService] Starting user service server as UID:GID $PUID:$PGID..."
+echo "[CasaOS-UserService] User service ready - filtering logs for clarity"
+touch /var/run/casaos-status/user-service-started
+exec gosu "$PUID:$PGID" /usr/local/bin/casaos-user-service 2>&1 | filter_logs "user-service"

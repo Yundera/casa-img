@@ -292,6 +292,7 @@ COPY ./s6-overlay/ /etc/s6-overlay/
 RUN chmod -R 755 /etc/s6-overlay/s6-rc.d
 RUN chmod +x /etc/s6-overlay/s6-rc.d/*/run
 RUN chmod +x /etc/s6-overlay/s6-rc.d/*/up
+RUN chmod +x /etc/s6-overlay/s6-rc.d/*/finish 2>/dev/null || true
 RUN chmod +x /etc/s6-overlay/scripts/*
 
 # Set environment variables
@@ -330,9 +331,18 @@ RUN chmod +x /usr/local/bin/register-ui-events.sh
 # Expose port
 EXPOSE 8080
 
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/v1/sys/health || exit 1
+
 ENV PATH="/command:$PATH"
 
-ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=60000
+ENV S6_CMD_WAIT_FOR_SERVICES_MAXTIME=300000
+
+# Configure s6-overlay behavior on failures
+ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2
+ENV S6_KILL_GRACETIME=3000
+ENV S6_KILL_FINISH_MAXTIME=5000
 
 # Set s6 as entrypoint
 ENTRYPOINT ["/init"]

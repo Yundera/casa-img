@@ -1,18 +1,25 @@
 #!/command/with-contenv bash
 
+echo "[CasaOS-AppManagement] Starting CasaOS App Management service..."
+echo "[CasaOS-AppManagement] Waiting for dependencies..."
+
 # Get the message bus URL
 runtime_file="/var/run/casaos/message-bus.url"
 
+echo "[CasaOS-AppManagement] Waiting for message bus to be ready..."
 while [ ! -f "$runtime_file" ]; do
     sleep 1
-    echo "Casa Main waiting for message bus URL..."
+    echo "[CasaOS-AppManagement] Still waiting for message bus URL..."
 done
+echo "[CasaOS-AppManagement] Message bus is ready!"
 
 # Wait for /var/run/casaos/routes.json to be created and contains local_storage
+echo "[CasaOS-AppManagement] Waiting for local storage service to be registered..."
 while [ ! -f /var/run/casaos/routes.json ] || ! grep -q "local_storage" /var/run/casaos/routes.json; do
-    echo "Waiting for /var/run/casaos/routes.json to be created and contains local_storage..."
+    echo "[CasaOS-AppManagement] Still waiting for local storage registration..."
     sleep 1
 done
+echo "[CasaOS-AppManagement] Local storage service is registered!"
 
 # Define log filter function
 filter_logs() {
@@ -79,4 +86,7 @@ filter_logs() {
     done
 }
 
-exec gosu "$PUID:$DOCKER_GID" /usr/local/bin/casaos-app-management 2>&1 | filter_logs
+echo "[CasaOS-AppManagement] Starting app management server with Docker access (UID:DOCKER_GID $PUID:$DOCKER_GID)..."
+echo "[CasaOS-AppManagement] App management service ready - filtering logs for clarity"
+touch /var/run/casaos-status/app-management-started
+exec gosu "$PUID:$DOCKER_GID" /usr/local/bin/casaos-app-management 2>&1 | filter_logs "app-management"

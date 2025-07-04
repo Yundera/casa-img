@@ -1,18 +1,25 @@
 #!/command/with-contenv bash
 
+echo "[CasaOS-Main] Starting CasaOS Main service..."
+echo "[CasaOS-Main] Waiting for dependencies..."
+
 # Get the message bus URL
 runtime_file="/var/run/casaos/message-bus.url"
 
+echo "[CasaOS-Main] Waiting for message bus to be ready ($runtime_file)..."
 while [ ! -f "$runtime_file" ]; do
     sleep 1
-    echo "Casa Main waiting for message bus URL..."
+    echo "[CasaOS-Main] Still waiting for message bus URL..."
 done
+echo "[CasaOS-Main] Message bus is ready!"
 
 # Wait for /var/run/casaos/routes.json to be created
+echo "[CasaOS-Main] Waiting for gateway routes configuration..."
 while [ ! -f /var/run/casaos/routes.json ]; do
-    echo "Waiting for /var/run/casaos/routes.json to be created..."
+    echo "[CasaOS-Main] Still waiting for /var/run/casaos/routes.json..."
     sleep 1
 done
+echo "[CasaOS-Main] Gateway routes configuration found!"
 
 # Define log filter function
 filter_logs() {
@@ -79,4 +86,7 @@ filter_logs() {
     done
 }
 
-exec gosu "$PUID:$PGID" /usr/local/bin/casaos-main 2>&1 | filter_logs
+echo "[CasaOS-Main] Starting main server as UID:GID $PUID:$PGID..."
+echo "[CasaOS-Main] Main service ready - filtering logs for clarity"
+touch /var/run/casaos-status/main-started
+exec gosu "$PUID:$PGID" /usr/local/bin/casaos-main 2>&1 | filter_logs "main"

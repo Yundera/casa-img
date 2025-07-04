@@ -1,5 +1,8 @@
 #!/command/with-contenv bash
 
+echo "[CasaOS-MessageBus] Starting CasaOS Message Bus service..."
+echo "[CasaOS-MessageBus] Waiting for gateway dependency..."
+
 # Define log filter function
 filter_logs() {
     local service_name="$1"
@@ -65,5 +68,8 @@ filter_logs() {
     done
 }
 
-exec gosu "$PUID:$PGID" /usr/local/bin/casaos-message-bus 2>&1 | filter_logs
+echo "[CasaOS-MessageBus] Starting message bus server as UID:GID $PUID:$PGID..."
+echo "[CasaOS-MessageBus] Message bus service ready - filtering logs for clarity"
+touch /var/run/casaos-status/message-bus-started
+exec gosu "$PUID:$PGID" /usr/local/bin/casaos-message-bus 2>&1 | filter_logs "message-bus"
 

@@ -1,0 +1,12 @@
+#!/command/with-contenv bash
+
+echo "[CasaOS-MessageBus] Service crashed or failed to start (exit code: $1)"
+
+# If the service failed to start or crashed unexpectedly, kill the container
+if [ "$1" -ne 0 ] && [ "$1" -ne 256 ]; then
+    echo "[CasaOS-MessageBus] Critical service failure - terminating container"
+    # Signal s6-overlay to terminate the container
+    /command/s6-svscanctl -t /var/run/s6/services
+fi
+
+exit 0

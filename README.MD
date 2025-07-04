@@ -82,6 +82,11 @@ CasaIMG provides environment variables to configure how new containers started b
 | REF_NET | Docker network to attach new containers to | `meta` | `bridge` |
 | REF_PORT | Default published port for container web interfaces | `80` | Container's default |
 | REF_DOMAIN | Base domain for automatic subdomain generation | `domain.com` | none |
+| PUID | User ID for file permissions | `1000` | `1000` |
+| PGID | Group ID for file permissions | `1000` | `1000` |
+| SKIP_CHOWN | Skip recursive ownership changes for faster startup | `false` | `true` |
+| S6_CMD_WAIT_FOR_SERVICES_MAXTIME | Service startup timeout in milliseconds | `300000` | `300000` |
+| S6_BEHAVIOUR_IF_STAGE2_FAILS | Container behavior on service failure (2=exit) | `1` | `2` |
 
 ### Domain Configuration Example
 
@@ -122,8 +127,6 @@ services:
 - If no domain is specified, containers will be accessible via IP:PORT
 - REF_PORT defines the default external port for web interfaces of new containers
 - Container-specific ports can still be configured individually through CasaOS interface
-
-Would you like me to clarify or expand any part of this section?
 
 # Development Setup
 

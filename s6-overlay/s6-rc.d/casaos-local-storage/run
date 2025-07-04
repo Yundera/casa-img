@@ -1,23 +1,33 @@
 #!/command/with-contenv bash
 
+echo "[CasaOS-LocalStorage] Starting CasaOS Local Storage service..."
+echo "[CasaOS-LocalStorage] Waiting for dependencies..."
+
 # Get the message bus URL
 runtime_file="/var/run/casaos/message-bus.url"
 
+echo "[CasaOS-LocalStorage] Waiting for message bus to be ready..."
 while [ ! -f "$runtime_file" ]; do
     sleep 1
-    echo "Casa Main waiting for message bus URL..."
+    echo "[CasaOS-LocalStorage] Still waiting for message bus URL..."
 done
+echo "[CasaOS-LocalStorage] Message bus is ready!"
 
 # Wait for /var/run/casaos/routes.json to be created
+echo "[CasaOS-LocalStorage] Waiting for gateway routes configuration..."
 while [ ! -f /var/run/casaos/routes.json ]; do
-    echo "Waiting for /var/run/casaos/routes.json to be created..."
+    echo "[CasaOS-LocalStorage] Still waiting for gateway routes..."
     sleep 1
 done
+echo "[CasaOS-LocalStorage] Gateway routes found!"
 
 # Wait for main service to be ready
+echo "[CasaOS-LocalStorage] Waiting for main service to be ready..."
 while [ ! -f /var/run/casaos/casaos.url ]; do
+  echo "[CasaOS-LocalStorage] Still waiting for main service..."
   sleep 1
 done
+echo "[CasaOS-LocalStorage] Main service is ready!"
 
 # Define log filter function
 filter_logs() {
@@ -84,4 +94,7 @@ filter_logs() {
     done
 }
 
-exec gosu "$PUID:$PGID" /usr/local/bin/casaos-local-storage 2>&1 | filter_logs
+echo "[CasaOS-LocalStorage] Starting local storage server as UID:GID $PUID:$PGID..."
+echo "[CasaOS-LocalStorage] Local storage service ready - filtering logs for clarity"
+touch /var/run/casaos-status/local-storage-started
+exec gosu "$PUID:$PGID" /usr/local/bin/casaos-local-storage 2>&1 | filter_logs "local-storage"
