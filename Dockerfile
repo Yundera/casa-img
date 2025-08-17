@@ -183,11 +183,13 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 WORKDIR /app
 #same version as the one in CasaOS-UI package.json
-RUN corepack enable && corepack prepare pnpm@9.0.6 --activate
+RUN npm install -g corepack@latest && corepack enable
 
 COPY ./CasaOS-UI/package.json .
 COPY ./CasaOS-UI/pnpm-lock.yaml .
+COPY ./CasaOS-UI/pnpm-workspace.yaml .
 
+RUN corepack install
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY ./CasaOS-UI .

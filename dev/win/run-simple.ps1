@@ -34,8 +34,11 @@ try {
     Write-Host "Running the Docker container..."
     # DATA_ROOT must be in linux style path so we need to convert C:\DATA to c/DATA
     # you need to create a network for it to work docker network create meta
+     #on windows we are root PUID:PGID 0:0 by default
     docker run -d `
     -p 8080:8080 `
+    -e PUID=0 `
+    -e PGID=0 `
     -e DATA_ROOT=/c/DATA `
     -v C:\DATA:/DATA `
     -v /var/run/docker.sock:/var/run/docker.sock `
