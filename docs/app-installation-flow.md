@@ -49,6 +49,13 @@ Handles both `application/yaml` and `application/json` content types:
 - Compares against compose app port mappings
 - Returns validation errors if conflicts found
 
+#### Pre-Install Command Execution (`executePreInstallScript()`)
+Before the actual installation begins, CasaOS checks for and executes optional pre-install commands:
+- Looks for `pre-install-cmd` in the compose file's `x-casaos` extension
+- Executes shell commands that can prepare the system or download additional resources
+- Examples: creating directories, downloading configuration files, setting up external dependencies
+- Installation continues even if pre-install command fails (with logging)
+
 ### 3. Service Layer Orchestration
 
 **File**: `CasaOS-AppManagement/service/compose_service.go`  
@@ -78,9 +85,22 @@ go func(ctx context.Context) {
     
     if err := composeApp.PullAndInstall(ctx); err != nil {
         // Error handling
+    } else {
+        // Execute post-install command after successful installation
+        if err := install_cmd.ExecutePostInstallScript((*codegen.ComposeApp)(composeApp)); err != nil {
+            logger.Error("failed to execute post-install command, but installation was successful", zap.Error(err), zap.String("name", composeApp.Name))
+            // Don't fail the installation if post-install command fails
+        }
     }
 }(ctx)
 ```
+
+#### Post-Install Command Execution
+After successful Docker compose installation, CasaOS executes optional post-install commands:
+- Looks for `post-install-cmd` in the compose file's `x-casaos` extension  
+- Executes shell commands for setup tasks that require running containers
+- Examples: database initialization, configuration updates, sending notifications
+- Post-install command failures don't mark the installation as failed (graceful degradation)
 
 ### 4. Compose App Operations
 
@@ -158,12 +178,98 @@ func apiService() (api.Service, client.APIClient, error) {
 
 Uses the official Docker Compose v2 Go library (`github.com/docker/compose/v2`) rather than shell command execution.
 
+## Install Command System
+
+**File**: `CasaOS-AppManagement/pkg/install_cmd/install_cmd.go`
+
+CasaOS supports optional pre-install and post-install commands through the `x-casaos` extension in Docker Compose files.
+
+### x-casaos Extension Format
+
+```yaml
+x-casaos:
+  pre-install-cmd: "echo 'Preparing installation...' && mkdir -p /data/config"
+  post-install-cmd: "echo 'Installation complete!' && curl -X POST http://webhook.example.com/notify"
+  # ... other casaos extensions
+```
+
+### Command Execution Environment
+
+Both pre-install and post-install commands are executed with:
+- **Shell**: `/bin/bash -c`
+- **Environment**: Full system environment plus Docker access
+- **Working Directory**: System dependent
+- **Streams**: Connected to standard input/output/error
+- **Docker Access**: Available via `DOCKER_HOST=unix:///var/run/docker.sock`
+
+### Pre-Install Commands (`pre-install-cmd`)
+
+**Execution Point**: Before Docker compose installation begins  
+**Use Cases**:
+- System preparation (creating directories, setting permissions)
+- Downloading configuration files or additional resources
+- Installing system dependencies
+- Setting up external databases or services
+
+**Example**:
+```yaml
+x-casaos:
+  pre-install-cmd: |
+    # Create necessary directories
+    mkdir -p /data/app/config /data/app/logs
+    # Download configuration template
+    curl -o /data/app/config/app.conf https://example.com/config/template.conf
+    # Set permissions
+    chmod 755 /data/app/config
+```
+
+### Post-Install Commands (`post-install-cmd`)
+
+**Execution Point**: After successful Docker compose installation (containers are running)  
+**Use Cases**:
+- Database initialization and schema setup
+- Application configuration that requires running containers
+- Integration with external services
+- Sending completion notifications
+- Health checks and validation
+
+**Example**:
+```yaml
+x-casaos:
+  post-install-cmd: |
+    # Wait for database to be ready
+    until docker exec myapp-db pg_isready; do sleep 2; done
+    # Initialize database schema
+    docker exec myapp-db psql -U postgres -d myapp -f /docker-entrypoint-initdb.d/schema.sql
+    # Send notification
+    curl -X POST "https://api.example.com/notify" -d '{"status":"installed","app":"myapp"}'
+```
+
+### Error Handling
+
+- **Pre-install failures**: Stop installation and return error to user
+- **Post-install failures**: Log error but don't mark installation as failed
+- All command output is logged with appropriate log levels
+- Commands have access to standard streams for interactive operations if needed
+
+### Security Considerations
+
+- Commands are executed with the same privileges as the CasaOS process
+- Full Docker socket access is available for container management
+- No input sanitization beyond standard bash execution
+- Use with trusted compose files only
+
 ## Key Files and Functions Reference
 
 | File | Function | Purpose |
 |------|----------|---------|
 | `route/v2/compose_app.go` | `InstallComposeApp()` | Main API endpoint handler |
 | `route/v2/compose_app.go` | `YAMLfromRequest()` | Extract YAML from HTTP request |
+| `route/v2/appstore_pcs.go` | `executePreInstallScript()` | Execute pre-install commands |
+| `route/v2/appstore_pcs.go` | `executePostInstallScript()` | Execute post-install commands |
+| `pkg/install_cmd/install_cmd.go` | `ExecuteInstallCmd()` | Generic install command executor |
+| `pkg/install_cmd/install_cmd.go` | `ExecutePreInstallScript()` | Pre-install command wrapper |
+| `pkg/install_cmd/install_cmd.go` | `ExecutePostInstallScript()` | Post-install command wrapper |
 | `service/compose_service.go` | `Install()` | Service layer orchestration |
 | `service/compose_service.go` | `PrepareWorkingDirectory()` | Create app directory |
 | `service/compose_app.go` | `PullAndInstall()` | Main installation coordinator |
@@ -220,9 +326,11 @@ The complete flow from API call to Docker compose execution:
 
 1. **HTTP Request** → `InstallComposeApp()` endpoint
 2. **YAML Processing** → Parse and validate compose specification  
-3. **Service Setup** → Create working directory and save compose file
-4. **Image Pull** → Download required Docker images
-5. **Container Creation** → Create containers via Docker Compose API
-6. **Service Start** → **Execute equivalent of `docker compose up`**
+3. **Pre-Install Command** → Execute optional `pre-install-cmd` from x-casaos extension
+4. **Service Setup** → Create working directory and save compose file
+5. **Image Pull** → Download required Docker images
+6. **Container Creation** → Create containers via Docker Compose API
+7. **Service Start** → **Execute equivalent of `docker compose up`**
+8. **Post-Install Command** → Execute optional `post-install-cmd` from x-casaos extension
 
-The actual Docker compose up operation occurs in `service/compose_app.go` where `service.Start()` is called with the compose project configuration.
+The actual Docker compose up operation occurs in `service/compose_app.go` where `service.Start()` is called with the compose project configuration. Pre-install commands run before any Docker operations, while post-install commands run after successful container startup.
