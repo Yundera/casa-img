@@ -32,6 +32,12 @@ mkdir -p /c/DATA/ # For compatibility with windows host
 mkdir -p /var/log/casaos
 mkdir -p /var/run/casaos
 
+echo "Setting ownership of casaos directories..."
+chown "$PUID:$PGID" /DATA
+chown "$PUID:$PGID" /DATA/AppData  
+chown "$PUID:$PGID" /DATA/AppData/casaos
+chown "$PUID:$PGID" /DATA/AppData/casaos/apps
+
 # Set ownership of directories that will be used by casaos processes
 # Skip by default to speed up initialization (set SKIP_CHOWN=false to force ownership changes)
 if [ "${SKIP_CHOWN:-true}" = "true" ]; then
