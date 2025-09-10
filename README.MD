@@ -128,6 +128,73 @@ services:
 - REF_PORT defines the default external port for web interfaces of new containers
 - Container-specific ports can still be configured individually through CasaOS interface
 
+## Volume Directory Preparation
+
+CasaIMG automatically prepares volume directories when installing applications to ensure proper permissions and ownership. This feature helps prevent common permission issues with containerized applications.
+
+### How It Works
+
+When installing an application, CasaIMG automatically:
+
+1. **Scans Docker Compose volumes** - Identifies all volume mounts for the application
+2. **Filters by DATA_ROOT** - Only processes directories under your configured `DATA_ROOT` path
+3. **Creates directories** - Uses `mkdir -p` behavior to create the directory and any missing parent directories
+4. **Sets ownership** - Assigns ownership to `PUID:PGID` for newly created directories only
+5. **Preserves existing directories** - Never changes ownership of directories that already exist
+
+### Requirements for Processing
+
+A volume path must meet **all** these criteria to be processed:
+
+- ✅ Path starts with `DATA_ROOT` (e.g., `/DATA/appname/config/`)
+- ✅ Path ends with `/` (to avoid accidentally creating files instead of directories)  
+- ✅ Directory doesn't already exist (existing directories are left untouched)
+
+### Example
+
+```yaml
+# Docker Compose for an application
+services:
+  myapp:
+    volumes:
+      - /DATA/myapp/config/:/app/config    # ✅ Will be processed
+      - /DATA/myapp/data/:/app/data        # ✅ Will be processed  
+      - /DATA/shared/:/app/shared          # ❌ Missing trailing slash, skipped
+      - /external/backup:/backup           # ❌ Outside DATA_ROOT, skipped
+      - myapp-cache:/tmp/cache             # ❌ Named volume, skipped
+```
+
+With `PUID=1000` and `PGID=1000`, CasaIMG would:
+- Create `/DATA/myapp/config/` owned by `1000:1000`
+- Create `/DATA/myapp/data/` owned by `1000:1000`
+- Skip `/DATA/shared/` (no trailing slash)
+- Skip `/external/backup` (outside DATA_ROOT)
+- Skip `myapp-cache` (named volume, not bind mount)
+
+### Benefits
+
+- **No permission errors** - Applications can immediately write to their data directories
+- **Consistent ownership** - All application data uses the same PUID:PGID  
+- **Safe operation** - Never modifies existing directories or files
+- **Automatic process** - No manual intervention required during app installation
+
+### Environment Variables
+
+| Variable | Purpose | Default | Example |
+|----------|---------|---------|---------|
+| `PUID` | User ID for new directories | `1000` | `1000` |
+| `PGID` | Group ID for new directories | `1000` | `1000` |
+| `DATA_ROOT` | Base path for application data | *required* | `/DATA` |
+
+### Troubleshooting
+
+If you encounter permission issues:
+
+1. **Check DATA_ROOT** - Ensure it matches your volume mount path
+2. **Check trailing slashes** - Volume paths in Docker Compose should end with `/`
+3. **Verify PUID/PGID** - Should match the user running containers
+4. **Check logs** - CasaIMG logs all directory creation and ownership changes
+
 # Development Setup
 
 ## Repository Structure

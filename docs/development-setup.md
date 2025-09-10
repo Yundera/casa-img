@@ -131,6 +131,44 @@ networks:
 3. **Hardware Access**: 
    - `/dev:/dev` - Required for hardware device access (USB drives, etc.)
 
+### Volume Directory Preparation (Developer Notes)
+
+CasaIMG automatically prepares volume directories during app installation to ensure proper permissions. This affects development and debugging:
+
+#### How It Works for Developers
+
+1. **Automatic Processing**: When installing apps through CasaOS UI, volume directories are created automatically
+2. **Environment Requirements**: Requires proper `DATA_ROOT`, `PUID`, `PGID` configuration
+3. **Developer Debugging**: Check logs for volume preparation messages:
+   ```bash
+   docker logs casaimg | grep "PCS Volume"
+   ```
+
+#### Testing Volume Preparation
+
+```bash
+# Create a test app with volume mounts ending in /
+services:
+  testapp:
+    image: nginx
+    volumes:
+      - /DATA/testapp/config/:/etc/nginx/conf.d/  # Will be processed
+      - /DATA/testapp/logs/:/var/log/nginx/       # Will be processed
+      - /DATA/testapp/html:/usr/share/nginx/html  # Won't be processed (no trailing /)
+```
+
+#### Common Development Issues
+
+- **Permission Denied**: Check PUID/PGID match your development environment user
+- **Directory Not Created**: Ensure volume paths end with `/` in Docker Compose
+- **Wrong Ownership**: Verify DATA_ROOT environment variable is set correctly
+
+#### Code Location for Development
+
+- **Implementation**: `service/pcs_volumes_check.go` - `PrepareVolumeDirectory()` function
+- **Integration**: `service/compose_app.go` - `PullAndInstall()` method
+- **Testing**: Create test applications with various volume mount patterns
+
 ## Development Workflow
 
 ### Local Development
