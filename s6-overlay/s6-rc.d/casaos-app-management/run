@@ -87,6 +87,15 @@ filter_logs() {
 }
 
 echo "[CasaOS-AppManagement] Starting app management server with Docker access (UID:DOCKER_GID $PUID:$DOCKER_GID)..."
+
+# Copy config file to a writable location if it doesn't exist
+writable_config="/DATA/.casaos/app-management.conf"
+if [ ! -f "$writable_config" ]; then
+    mkdir -p /DATA/.casaos
+    cp /etc/casaos/app-management.conf "$writable_config"
+    chown "$PUID:$DOCKER_GID" "$writable_config"
+fi
+
 echo "[CasaOS-AppManagement] App management service ready - filtering logs for clarity"
 touch /var/run/casaos-status/app-management-started
-exec gosu "$PUID:$DOCKER_GID" /usr/local/bin/casaos-app-management 2>&1 | filter_logs "app-management"
+exec gosu "$PUID:$DOCKER_GID" /usr/local/bin/casaos-app-management -c "$writable_config" 2>&1 | filter_logs "app-management"
