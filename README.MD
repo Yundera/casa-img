@@ -82,6 +82,7 @@ CasaIMG provides environment variables to configure how new containers started b
 | REF_NET | Docker network to attach new containers to | `meta` | `bridge` |
 | REF_PORT | Default published port for container web interfaces | `80` | Container's default |
 | REF_DOMAIN | Base domain for automatic subdomain generation | `domain.com` | none |
+| USER | Automatically create an admin user on first startup (format: `username:password`) | `admin:mypassword` | none |
 | PUID | User ID for file permissions | `1000` | `1000` |
 | PGID | Group ID for file permissions | `1000` | `1000` |
 | SKIP_CHOWN | Skip recursive ownership changes for faster startup | `false` | `true` |
