@@ -96,6 +96,24 @@ RUN go build -o casaos-message-bus .
 COPY ./CasaOS-MessageBus/build/sysroot/etc/casaos/message-bus.conf.sample /etc/casaos/message-bus.conf
 
 ############################################################################################################
+# Build the Go binary for the SMTP Relay
+############################################################################################################
+FROM golang:1.21-alpine AS builder-casaos-smtp-relay
+
+WORKDIR /app
+
+COPY ./CasaOS-SMTPRelay/go.mod ./
+COPY ./CasaOS-SMTPRelay/go.sum ./
+
+RUN go mod download
+
+COPY ./CasaOS-SMTPRelay/common ./common
+COPY ./CasaOS-SMTPRelay/service ./service
+COPY ./CasaOS-SMTPRelay/main.go ./main.go
+
+RUN go build -o casaos-smtp-relay .
+
+############################################################################################################
 # Build the Go binary for the AppManagement
 ############################################################################################################
 FROM golang:1.21-alpine AS builder-casaos-app-management
@@ -312,6 +330,7 @@ COPY --from=builder-casaos-gateway /app/casaos-gateway .
 COPY --from=builder-casaos-app-management /app/casaos-app-management .
 COPY --from=builder-casaos-user-service /app/casaos-user-service .
 COPY --from=builder-casaos-message-bus /app/casaos-message-bus .
+COPY --from=builder-casaos-smtp-relay /app/casaos-smtp-relay .
 COPY --from=builder-casaos-local-storage /app/casaos-local-storage .
 COPY --from=builder-casaos-main /app/casaos-main .
 COPY --from=builder-casaos-cli /app/casaos-cli .

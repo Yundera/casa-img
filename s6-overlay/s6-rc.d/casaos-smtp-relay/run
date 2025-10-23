@@ -1,0 +1,14 @@
+#!/command/with-contenv bash
+
+echo "[CasaOS-SMTPRelay] Starting CasaOS SMTP Relay service..."
+
+# Check if SMTP is disabled
+if [ "${ENABLE_SMTP}" = "false" ]; then
+    echo "[CasaOS-SMTPRelay] SMTP is disabled via ENABLE_SMTP=false"
+    exit 0
+fi
+
+echo "[CasaOS-SMTPRelay] Starting SMTP relay server on port ${SMTP_PORT:-587}..."
+echo "[CasaOS-SMTPRelay] SMTP relay service ready"
+touch /var/run/casaos-status/smtp-relay-started
+exec gosu "$PUID:$PGID" /usr/local/bin/casaos-smtp-relay
