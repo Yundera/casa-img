@@ -45,7 +45,3 @@
 	url = https://github.com/Yundera/CasaOS-LocalStorage.git
     branch = main
     update = merge
-[submodule "CasaOS-SMTPRelay"]
-	path = CasaOS-SMTPRelay
-	url = https://github.com/Yundera/casaos-smtp-relay.git
-	branch = main
