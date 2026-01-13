@@ -1,7 +1,7 @@
 ############################################################################################################
 # Build the Go binary for the Gateway
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-gateway
+FROM golang:1.22-alpine AS builder-casaos-gateway
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN mkdir -p /var/run/casaos/ && echo -n "{}" >> /var/run/casaos/routes.json
 ############################################################################################################
 # Build the Go binary for the User Service
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-user-service
+FROM golang:1.22-alpine AS builder-casaos-user-service
 
 WORKDIR /app
 
@@ -64,7 +64,7 @@ COPY ./CasaOS-UserService/build/sysroot/etc/casaos/user-service.conf.sample /etc
 ############################################################################################################
 # Build the Go binary for the MessageBus
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-message-bus
+FROM golang:1.22-alpine AS builder-casaos-message-bus
 
 WORKDIR /app
 
@@ -98,7 +98,7 @@ COPY ./CasaOS-MessageBus/build/sysroot/etc/casaos/message-bus.conf.sample /etc/c
 ############################################################################################################
 # Build the Go binary for the AppManagement
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-app-management
+FROM golang:1.22-alpine AS builder-casaos-app-management
 
 WORKDIR /app
 
@@ -117,14 +117,13 @@ RUN mkdir -p codegen/message_bus && \
     go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.12.4 \
     -generate types,client -package message_bus https://raw.githubusercontent.com/IceWhaleTech/CasaOS-MessageBus/main/api/message_bus/openapi.yaml > codegen/message_bus/api.go
 
-    
 COPY ./CasaOS-AppManagement/build ./build
-COPY ./CasaOS-AppManagement/service ./service
-COPY ./CasaOS-AppManagement/route ./route
-COPY ./CasaOS-AppManagement/pkg ./pkg
-COPY ./CasaOS-AppManagement/model ./model
-COPY ./CasaOS-AppManagement/common ./common
 COPY ./CasaOS-AppManagement/cmd ./cmd
+COPY ./CasaOS-AppManagement/common ./common
+COPY ./CasaOS-AppManagement/model ./model
+COPY ./CasaOS-AppManagement/pkg ./pkg
+COPY ./CasaOS-AppManagement/route ./route
+COPY ./CasaOS-AppManagement/service ./service
 COPY ./CasaOS-AppManagement/main.go ./main.go
 
 RUN go build -o casaos-app-management .
@@ -136,7 +135,7 @@ COPY ./CasaOS-AppManagement/build/sysroot/etc/casaos/env /etc/casaos/env
 ############################################################################################################
 # Build the Go binary for the LocalStorage
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-local-storage
+FROM golang:1.22-alpine AS builder-casaos-local-storage
 
 WORKDIR /app
 
@@ -198,7 +197,7 @@ RUN pnpm run build
 ############################################################################################################
 # Build the Go binary for the CasaOS Main
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-main
+FROM golang:1.22-alpine AS builder-casaos-main
 
 WORKDIR /app
 
@@ -238,7 +237,7 @@ COPY ./CasaOS/build/sysroot/etc/casaos/casaos.conf.sample /etc/casaos/casaos.con
 ############################################################################################################
 # Build the Go binary for the CasaOS Cli
 ############################################################################################################
-FROM golang:1.21-alpine AS builder-casaos-cli
+FROM golang:1.22-alpine AS builder-casaos-cli
 
 WORKDIR /app
 
@@ -246,6 +245,9 @@ COPY ./CasaOS-CLI/go.mod ./
 COPY ./CasaOS-CLI/go.sum ./
 
 #see main.go
+RUN go mod download
+
+# Generate OpenAPI codegen
 RUN mkdir -p codegen/app_management && \
     go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.12.4 \
     -generate types,client -package app_management https://raw.githubusercontent.com/IceWhaleTech/CasaOS-AppManagement/main/api/app_management/openapi.yaml > codegen/app_management/api.go
@@ -261,8 +263,6 @@ RUN mkdir -p codegen/message_bus && \
 RUN mkdir -p codegen/user_service && \
     go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.12.4 \
     -generate types,client -package user_service https://raw.githubusercontent.com/IceWhaleTech/CasaOS-UserService/main/api/user-service/openapi.yaml > codegen/user_service/api.go
-
-RUN go mod download
 
 COPY ./CasaOS-CLI/build ./build
 COPY ./CasaOS-CLI/cmd ./cmd
@@ -300,6 +300,8 @@ RUN chmod +x /etc/s6-overlay/scripts/*
 # Set environment variables
 ENV GO_ENV=production
 ENV REF_SEPARATOR=-
+# Docker API version compatibility - ensures SDK works with newer Docker daemons
+ENV DOCKER_API_VERSION=1.44
 #ENV REF_SCHEME=https
 #ENV REF_PORT=443
 
