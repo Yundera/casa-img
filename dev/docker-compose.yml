@@ -1,0 +1,45 @@
+services:
+  casaos:
+    image: casa-img:latest
+    container_name: casaos
+    hostname: casaos
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      DOCKER_API_VERSION: "1.44"
+      PUID: "1000"
+      PGID: "1000"
+      DATA_ROOT: "${DATA_HOST_PATH:-/DATA}"
+      REF_DOMAIN: "${PCS_DOMAIN}"
+      REF_NET: "mesh"
+      REF_PORT: "80"
+      REF_SCHEME: "http"
+      default_pwd: "${PCS_DEFAULT_PASSWORD}"
+      public_ip: "${PUBLIC_IP}"
+      domain: "${PCS_DOMAIN}"
+      PCS_DEFAULT_PASSWORD: "${PCS_DEFAULT_PASSWORD}"
+      PCS_DOMAIN: "${PCS_DOMAIN}"
+      PCS_DATA_ROOT: "${DATA_HOST_PATH:-/DATA}"
+      PCS_PUBLIC_IP: "${PUBLIC_IP}"
+      PCS_EMAIL: "${PCS_EMAIL}"
+      USER: "admin:${PCS_DEFAULT_PASSWORD}"
+    networks:
+      - mesh
+    volumes:
+      - type: bind
+        source: ${DATA_HOST_PATH:-/DATA}
+        target: /DATA
+        bind:
+          propagation: rshared
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: /dev
+        target: /dev
+
+networks:
+  mesh:
+    driver: bridge
+    name: mesh

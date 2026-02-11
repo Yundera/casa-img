@@ -119,29 +119,40 @@ func (a *ComposeApp) injectEnvVariableToComposeApp() {
 
 **Location**: `route/v2/appstore_pcs.go`
 
-**Used For**: Modifying compose apps before installation/validation in Yundera's Personal Cloud Server
+**Used For**: Template variable substitution in store listings for Yundera's Personal Cloud Server
 
 **Variables**:
 - `DATA_ROOT` - Root path for app data storage (e.g., `/DATA`)
 - `REF_NET` - Docker network to attach containers (e.g., `pcs`)
-- `REF_PORT` - Default port for web access (e.g., `80` or `443`)
-- `REF_DOMAIN` - Base domain for automatic subdomain generation (e.g., `mydomain.com`)
+- `REF_PORT` - External port for web access (e.g., `80` or `443`)
+- `REF_DOMAIN` - Base domain for subdomain generation (e.g., `mydomain.nsl.sh`)
 - `REF_SCHEME` - Protocol scheme: `http` or `https` (default: `http`)
-- `REF_SEPARATOR` - Subdomain separator character (default: `-`)
-- `REF_DEFAULT_PORT` - Fallback port when not specified (default: `80`)
 
-**Code Reference** (`appstore_pcs_validate.go:14`):
-```go
-func needsModification() bool {
-    envVars := []string{"DATA_ROOT", "REF_NET", "REF_PORT", "REF_DOMAIN", "REF_SCHEME", "PUID", "PGID"}
-    for _, env := range envVars {
-        if os.Getenv(env) != "" {
-            return true
-        }
-    }
-    return false
-}
+**Template Variable Substitution**:
+
+These environment variables are used to substitute template variables in store listings. Store authors use `${variable}` syntax in labels and `x-casaos` fields:
+
+```yaml
+services:
+  myapp:
+    labels:
+      compass: "${name}-${domain}"           # → myapp-mydomain.nsl.sh
+      compass.reverse_proxy: "{{upstreams 8080}}"
+
+x-casaos:
+  hostname: "${name}-${domain}"
+  scheme: "${scheme}"
+  port_map: "${port}"
 ```
+
+| Template Variable | Replaced With |
+|-------------------|---------------|
+| `${domain}` | `REF_DOMAIN` value |
+| `${scheme}` | `REF_SCHEME` value |
+| `${port}` | `REF_PORT` value |
+| `${name}` | Compose app name |
+
+**See**: [Store Listing Templates](./store-listing-templates.md) for complete documentation on template variables.
 
 ## Priority/Override Order
 

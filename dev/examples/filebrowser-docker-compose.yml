@@ -1,0 +1,73 @@
+name: filebrowser
+services:
+  filebrowser:
+    container_name: filebrowser
+    hostname: filebrowser
+    user: $PUID:$PGID
+    environment:
+      PGID: $PGID
+      PUID: $PUID
+      TZ: $TZ
+      FB_DATABASE: /db/database.db
+    image: filebrowser/filebrowser:v2.32.0
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${APP_DATA_ROOT}/AppData/filebrowser/db/
+        target: /db/
+      - type: bind
+        source: ${APP_DATA_ROOT}/
+        target: /srv
+    expose:
+      - 80
+    cpu_shares: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - net
+    labels:
+      caddy: filebrowser.${APP_DOMAIN}
+      caddy.reverse_proxy: "{{upstreams 80}}"
+
+networks:
+  net:
+    name: ${APP_NET}
+    external: true
+
+x-casaos:
+  pre-install-cmd: |
+    docker run --rm -v ${APP_DATA_ROOT}/AppData/filebrowser/db/:/db filebrowser/filebrowser:v2.32.0 config init --database /db/database.db &&
+    docker run --rm -v ${APP_DATA_ROOT}/AppData/filebrowser/:/data ubuntu:22.04 chown -R $PUID:$PGID /data &&
+    docker run --rm -v ${APP_DATA_ROOT}/AppData/filebrowser/db/:/db filebrowser/filebrowser:v2.32.0 users add admin $APP_DEFAULT_PASSWORD --perm.admin --database /db/database.db
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: filebrowser
+  author: Yundera Team
+  category: Cloud
+  description:
+    en_us: |
+      FileBrowser Your Private File Manager Made Easy
+
+      FileBrowser transforms the way you manage files on your Yundera Private Cloud Server.
+  developer: File Browser
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/screenshot-1.png
+  tagline:
+    en_us: This is your Cloud. Your own Drive alternative.
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/FileBrowser/thumbnail.png
+  tips:
+    before_install:
+      en_us: |
+        Default Account
+        | Username   | Password       |
+        | --------   | ------------   |
+        | `admin`    | `$APP_DEFAULT_PASSWORD` |
+  title:
+    en_us: FileBrowser
+  index: /
+  webui_port: 80
