@@ -95,6 +95,15 @@ filter_logs() {
 }
 
 echo "[CasaOS-UserService] Starting user service server as UID:GID $PUID:$PGID..."
+
+# Read user email from .ynd.user.env (this script runs as root, service runs as uid 1000)
+YND_ENV_FILE="/DATA/AppData/casaos/apps/yundera/.ynd.user.env"
+if [ -f "$YND_ENV_FILE" ]; then
+    YND_USER_EMAIL=$(grep '^EMAIL=' "$YND_ENV_FILE" | cut -d'=' -f2)
+    export YND_USER_EMAIL
+    echo "[CasaOS-UserService] Loaded user email from .ynd.user.env"
+fi
+
 echo "[CasaOS-UserService] User service ready - filtering logs for clarity"
 touch /var/run/casaos-status/user-service-started
 exec gosu "$PUID:$PGID" /usr/local/bin/casaos-user-service 2>&1 | filter_logs "user-service"
