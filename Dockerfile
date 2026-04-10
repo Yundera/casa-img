@@ -192,6 +192,8 @@ RUN corepack install
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 COPY ./CasaOS-UI .
+ARG BUILD_VERSION=0.0.0
+ENV VUE_APP_VERSION=$BUILD_VERSION
 RUN pnpm run build
 
 ############################################################################################################
