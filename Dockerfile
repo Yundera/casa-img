@@ -283,12 +283,19 @@ RUN apt-get update && apt-get install -y rclone wget gosu curl smartmontools par
 # install docker https://docs.docker.com/engine/install/ubuntu/
 RUN curl -fsSL https://get.docker.com -o get-docker.sh && sh get-docker.sh
 
-# Install s6-overlay
+# Install s6-overlay (arch-aware: buildx sets TARGETARCH automatically)
 ARG S6_OVERLAY_VERSION=3.1.6.2
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
-RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
-    tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz && \
+ARG TARGETARCH
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp/
+RUN case "${TARGETARCH}" in \
+      amd64) S6_ARCH=x86_64 ;; \
+      arm64) S6_ARCH=aarch64 ;; \
+      arm)   S6_ARCH=arm ;; \
+      *) echo "unsupported TARGETARCH: ${TARGETARCH}"; exit 1 ;; \
+    esac && \
+    curl -fL "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz" -o /tmp/s6-overlay-arch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-arch.tar.xz && \
     rm /tmp/s6-overlay-*.tar.xz
 
 # Copy s6 service definitions
